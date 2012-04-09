@@ -145,6 +145,12 @@ static void end_idle(int cpu)
 	
 	struct capture_list* tmp;
 	struct timespec highRes_end;
+	if(idle_store[cpu].timestamp == 0)
+	{
+		/* When the module is started, the fist call to end_idle
+		   can be corrupted */
+		return;
+	}
 	getrawmonotonic(&highRes_end); /* kmalloc is slow. Fetching time beforehand */
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
 	tmp->entry = idle_store[cpu];
@@ -173,6 +179,7 @@ static void init_capture(void)
 	for(i = 0; i < NR_CPUS; ++i)
 	{
 		idle_store[i].cpu = i;
+		idle_store[i].timestamp = 0;
 	}
 	IP_list = (struct list_head*) kmalloc(sizeof(struct list_head), GFP_KERNEL);
 	INIT_LIST_HEAD(IP_list);
