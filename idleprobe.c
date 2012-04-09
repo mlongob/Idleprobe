@@ -18,8 +18,6 @@
 #include <linux/slab.h> /* For kmalloc and kfree */
 #include <linux/gfp.h> /* For memory flags */
 #include <linux/spinlock.h> /* For spinlocks */
-#include <asm/msr.h> /* For low level timing */
-
 #include <linux/time.h> /* For low level timing */
 #include <linux/ktime.h> /* For low level timing */
 
@@ -44,6 +42,16 @@ static int IP_open(struct inode *inode, struct file *file);
 static void IP_tick_nohz_stop_sched_tick(int a);
 static void IP_tick_nohz_restart_sched_tick(void);
 
+typedef struct delta_period
+{
+	/* 
+	 * One delta entry
+	 */
+	
+	struct timespec begin;
+	struct timespec end;
+} delta_period_t;
+
 typedef struct capture_entry
 {
 	/* 
@@ -51,17 +59,11 @@ typedef struct capture_entry
 	 */
 	
 	int cpu;
-	struct timespec jiffiesB;
-	struct timespec jiffiesE;
-	struct timespec highResB;
-	struct timespec highResE;
-	struct timespec gnstodB;
-	struct timespec gnstodE;
-	ktime_t ktimeB;
-	ktime_t ktimeE;
-	cycles_t cyclesB;
-	cycles_t cyclesE;
 	int count;
+	delta_period_t jiffies;
+	delta_period_t highRes;
+	cycles_t cycles_begin;
+	cycles_t cycles_end;
 } capture_entry_t;
 
 struct capture_list
@@ -117,35 +119,15 @@ static struct seq_operations IP_seq_ops = {
 static int entry_count = 0;
 static capture_entry_t* idle_store;
 
-static void fetch_begin_time(capture_entry_t* entry)
-{
-	jiffies_to_timespec(jiffies, &(entry->jiffiesB));
-	getrawmonotonic(&(entry->highResB));
-	entry->cyclesB = get_cycles();
-	getnstimeofday(&(entry->gnstodB));
-	entry->ktimeB = ktime_get();
-}
-
-static void fetch_end_time(capture_entry_t* entry)
-{
-	jiffies_to_timespec(jiffies, &(entry->jiffiesE));
-	getrawmonotonic(&(entry->highResE));
-	entry->cyclesE = get_cycles();
-	getnstimeofday(&(entry->gnstodE));
-	entry->ktimeE = ktime_get();
-}
-
 static void begin_idle(int cpu)
 {
 	/* 
 	 * Beginning of idle time on "cpu"
 	 */
 	
-	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffiesB));
-	getrawmonotonic(&(idle_store[cpu].highResB));
-	idle_store[cpu].cyclesB = get_cycles();
-	getnstimeofday(&(idle_store[cpu].gnstodB));
-	idle_store[cpu].ktimeB = ktime_get();
+	getrawmonotonic(&(idle_store[cpu].highRes.begin));
+	idle_store[cpu].cycles_begin = get_cycles();
+	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffies.begin));
 }
 
 static void end_idle(int cpu)
@@ -159,11 +141,9 @@ static void end_idle(int cpu)
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
 	tmp->entry = idle_store[cpu];
 	
-	jiffies_to_timespec(jiffies, &(tmp->entry.jiffiesE));
-	getrawmonotonic(&(tmp->entry.highResE));
-	tmp->entry.cyclesE = get_cycles();
-	getnstimeofday(&(tmp->entry.gnstodE));
-	tmp->entry.ktimeE = ktime_get();
+	getrawmonotonic(&(tmp->entry.highRes.end));
+	tmp->entry.cycles_end = get_cycles();
+	jiffies_to_timespec(jiffies, &(tmp->entry.jiffies.end));
 	
 	spin_lock(&IP_list_lock);
 	tmp->entry.count = entry_count++;
@@ -336,9 +316,9 @@ static void IP_seq_stop(struct seq_file *s, void *v)
 	return;
 }
 
-static u64 ts_diff(struct timespec *start, struct timespec *end)
+static u64 delta_to_ns(delta_period_t* delta)
 {
-	return (end->tv_sec - start->tv_sec)*1000000000 + end->tv_nsec - start->tv_nsec;
+	return (delta->end.tv_sec - delta->begin.tv_sec)*1000000000 + delta->end.tv_nsec - delta->begin.tv_nsec;
 }
 
 static int IP_seq_show(struct seq_file *s, void *v)
@@ -351,32 +331,11 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	struct list_head *list = s->private;
 	capture_entry_t test;
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
-	u64 jiffiesD, highResD, gnstodD, ktimeD;
-	long long int error;
-	jiffiesD = ts_diff(&(entry->entry.jiffiesB), &(entry->entry.jiffiesE));
-	highResD = ts_diff(&(entry->entry.highResB), &(entry->entry.highResE));
-	gnstodD = ts_diff(&(entry->entry.gnstodB), &(entry->entry.gnstodE));
-	ktimeD = ktime_to_ns(entry->entry.ktimeE) - ktime_to_ns(entry->entry.ktimeB);
-	error = gnstodD - ktimeD;
-	seq_printf(s, "[%d] CPU%d: Jiffies=%lluns HighRes=%lluns gnstod=%lluns ktime=%lluns\n", entry->entry.count,
-			   entry->entry.cpu, jiffiesD, highResD, gnstodD, ktimeD);
-	seq_printf(s, "Error=%lldns\n", error);
-			   
-	fetch_begin_time(&test);
-	fetch_end_time(&test);
-	getrawmonotonic(&(test.highResB));
-	getrawmonotonic(&(test.highResE));
-	test.ktimeB = ktime_get();
-	test.ktimeE = ktime_get();
-	getnstimeofday(&(test.gnstodB));
-	getnstimeofday(&(test.gnstodE));
-	jiffiesD = ts_diff(&(test.jiffiesB), &(test.jiffiesE));
-	highResD = ts_diff(&(test.highResB), &(test.highResE));
-	gnstodD = ts_diff(&(test.gnstodB), &(test.gnstodE));
-	ktimeD = ktime_to_ns(test.ktimeE) - ktime_to_ns(test.ktimeB);
-	error = gnstodD - ktimeD;
-	seq_printf(s, "REPEAT: Jiffies=%lluns HighRes=%lluns gnstod=%lluns ktime=%lluns\n",
-			   jiffiesD, highResD, gnstodD, ktimeD);
+	u64 jiffies_delta, highRes_delta;
+	jiffies_delta = delta_to_ns(&entry->entry.jiffies);
+	highRes_delta = delta_to_ns(&entry->entry.highRes);
+	seq_printf(s, "%d %d %llu %llu\n", entry->entry.count,
+			   entry->entry.cpu, highRes_delta, jiffies_delta);
 	return 0;
 }
 
