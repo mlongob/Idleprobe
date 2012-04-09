@@ -62,7 +62,6 @@ typedef struct capture_entry
 	
 	int cpu;					/* CPU number */
 	delta_period_t jiffies; 	/* Based on kernel jiffiees counter */
-	delta_period_t test; 		/* Test */
 	delta_period_t highRes;		/* Based on CPU cycles */
 	cycles_t cycles_begin;		/* Cycles counter value (begin) */
 	cycles_t cycles_end;		/* Cycles counter value (end) */
@@ -139,15 +138,14 @@ static void end_idle(int cpu)
 	 */
 	
 	struct capture_list* tmp;
-	delta_period_t test;
-	getrawmonotonic(&test.begin);
+	struct timespec highRes_end;
+	getrawmonotonic(&highRes_end); /* kmalloc is slow. Fetching time beforehand */
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
-	getrawmonotonic(&test.end);
 	tmp->entry = idle_store[cpu];
-	tmp->entry.test = test;
-	getrawmonotonic(&tmp->entry.highRes.end);
+	
 	tmp->entry.cycles_end = get_cycles();
 	jiffies_to_timespec(jiffies, &tmp->entry.jiffies.end);
+	tmp->entry.highRes.end = highRes_end;
 	
 	spin_lock(&IP_list_lock);
 	tmp->count = entry_count++;
@@ -342,7 +340,6 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
 	seq_printf(s, "%d %d %llu %llu %llu\n", entry->count,
 			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta);
-	seq_printf(s, "%llu\n", delta_to_ns(&entry->entry.test));
 	return 0;
 }
 
