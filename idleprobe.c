@@ -58,12 +58,11 @@ typedef struct capture_entry
 	 * Entry data for one idle period
 	 */
 	
-	int cpu;
-	int count;
-	delta_period_t jiffies;
-	delta_period_t highRes;
-	cycles_t cycles_begin;
-	cycles_t cycles_end;
+	int cpu;					/* CPU number */
+	delta_period_t jiffies; 	/* Based on kernel jiffiees counter */
+	delta_period_t highRes;		/* Based on CPU cycles */
+	cycles_t cycles_begin;		/* Cycles counter value (begin) */
+	cycles_t cycles_end;		/* Cycles counter value (end) */
 } capture_entry_t;
 
 struct capture_list
@@ -73,7 +72,7 @@ struct capture_list
 	 */
 	
 	capture_entry_t entry;
-	char test;
+	int count;					/* Number of entry */
 	struct list_head list;
 };
 
@@ -146,7 +145,7 @@ static void end_idle(int cpu)
 	jiffies_to_timespec(jiffies, &(tmp->entry.jiffies.end));
 	
 	spin_lock(&IP_list_lock);
-	tmp->entry.count = entry_count++;
+	tmp->count = entry_count++;
 	list_add_tail(&(tmp->list), IP_list);
 	spin_unlock(&IP_list_lock);
 }
@@ -316,7 +315,7 @@ static void IP_seq_stop(struct seq_file *s, void *v)
 	return;
 }
 
-static u64 delta_to_ns(delta_period_t* delta)
+static u64 delta_to_ns(const delta_period_t* delta)
 {
 	return (delta->end.tv_sec - delta->begin.tv_sec)*1000000000 + delta->end.tv_nsec - delta->begin.tv_nsec;
 }
@@ -330,12 +329,14 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	
 	struct list_head *list = s->private;
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
-	u64 jiffies_delta, highRes_delta;
+	u64 jiffies_delta, highRes_delta, cycles_delta;
 	
-	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies))/10000000;
+	/* Jiffies are rounded half up to the closest 10ms resolution */
+	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies) + 5000000)/10000000;
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
-	seq_printf(s, "%d %d %llu %llu\n", entry->entry.count,
-			   entry->entry.cpu, highRes_delta, jiffies_delta);
+	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
+	seq_printf(s, "%d %d %llu %llu %llu\n", entry->count,
+			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta);
 	return 0;
 }
 
