@@ -332,7 +332,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
 	u64 jiffies_delta, highRes_delta;
 	
-	jiffies_delta = delta_to_ns(&entry->entry.jiffies)/10000000;
+	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies))/10000000;
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
 	seq_printf(s, "%d %d %llu %llu\n", entry->entry.count,
 			   entry->entry.cpu, highRes_delta, jiffies_delta);
