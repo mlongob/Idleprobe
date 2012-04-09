@@ -117,6 +117,24 @@ static struct seq_operations IP_seq_ops = {
 static int entry_count = 0;
 static capture_entry_t* idle_store;
 
+static void fetch_begin_time(capture_entry_t* entry)
+{
+	jiffies_to_timespec(jiffies, &(entry->jiffiesB));
+	getrawmonotonic(&(entry->highResB));
+	entry->cyclesB = get_cycles();
+	getnstimeofday(&(entry->gnstodB));
+	entry->ktimeB = ktime_get();
+}
+
+static void fetch_end_time(capture_entry_t* entry)
+{
+	jiffies_to_timespec(jiffies, &(entry->jiffiesE));
+	getrawmonotonic(&(entry->highResE));
+	entry->cyclesE = get_cycles();
+	getnstimeofday(&(entry->gnstodE));
+	entry->ktimeE = ktime_get();
+}
+
 static void begin_idle(int cpu)
 {
 	/* 
@@ -331,6 +349,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	 */
 	
 	struct list_head *list = s->private;
+	capture_entry_t test;
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
 	u64 jiffiesD, highResD, gnstodD, ktimeD;
 	long long int error;
@@ -352,6 +371,16 @@ static int IP_seq_show(struct seq_file *s, void *v)
 			   entry->entry.jiffiesE.tv_nsec, entry->entry.highResE.tv_nsec);
 	seq_printf(s, "Before=%llu End=%llu Difference=%llu\n",
 			   entry->entry.cyclesB, entry->entry.cyclesE, entry->entry.cyclesE - entry->entry.cyclesB); */
+			   
+	fetch_begin_time(&test);
+	fetch_end_time(&test);
+	jiffiesD = ts_diff(&(test.jiffiesB), &(test.jiffiesE));
+	highResD = ts_diff(&(test.highResB), &(test.highResE));
+	gnstodD = ts_diff(&(test.gnstodB), &(test.gnstodE));
+	ktimeD = ktime_to_ns(test.ktimeE) - ktime_to_ns(test.ktimeB);
+	error = gnstodD - ktimeD;
+	seq_printf(s, "REPEAT: Jiffies=%lluns HighRes=%lluns gnstod=%lluns ktime=%lluns\n",
+			   jiffiesD, highResD, gnstodD, ktimeD);
 	return 0;
 }
 
