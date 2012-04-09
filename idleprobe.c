@@ -374,6 +374,12 @@ static int IP_seq_show(struct seq_file *s, void *v)
 			   
 	fetch_begin_time(&test);
 	fetch_end_time(&test);
+	getrawmonotonic(&(test.highResB));
+	getrawmonotonic(&(test.highResE));
+	test.ktimeB = ktime_get();
+	test.ktimeE = ktime_get();
+	getnstimeofday(&(test.gnstodB));
+	getnstimeofday(&(test.gnstodB));
 	jiffiesD = ts_diff(&(test.jiffiesB), &(test.jiffiesE));
 	highResD = ts_diff(&(test.highResB), &(test.highResE));
 	gnstodD = ts_diff(&(test.gnstodB), &(test.gnstodE));
