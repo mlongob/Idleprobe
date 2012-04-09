@@ -334,7 +334,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	highResD = ts_diff(&(entry->entry.highResB), &(entry->entry.highResE));
 	gnstodD = ts_diff(&(entry->entry.gnstodB), &(entry->entry.gnstodE));
 	error = gnstodD - highResD;
-	seq_printf(s, "[%d] CPU%d: Jiffies=%lluns HighRes=%lluns gnstod=\=%lluns\n", entry->entry.count,
+	seq_printf(s, "[%d] CPU%d: Jiffies=%lluns HighRes=%lluns gnstod=%lluns\n", entry->entry.count,
 			   entry->entry.cpu, jiffiesD, highResD, gnstodD);
 	seq_printf(s, "Error=%lldns\n", error);
 /* 	seq_printf(s, "Jiffies=%lus HighRes=%lus\n",
