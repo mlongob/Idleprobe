@@ -141,8 +141,8 @@ static void end_idle(int cpu)
 	
 	//gettimeofday(&(tmp->entry.end), NULL);
 	jiffies_to_timespec(jiffies, &(tmp->entry.jiffiesE));
-	getrawmonotonic(&(idle_store[cpu].highResE));
-	idle_store[cpu].cyclesE = get_cycles();
+	getrawmonotonic(&(tmp->entry.highResE));
+	tmp->entry.cyclesE = get_cycles();
 	printk(KERN_INFO "idleprobe: CPU%d AFTER:%llu\n", cpu, get_cycles());
 	printk(KERN_INFO "idleprobe: CPU%d BEFORE2:%llu\n", cpu, idle_store[cpu].cyclesB);
 	printk(KERN_INFO "idleprobe: CPU%d AFTER2:%llu\n", cpu, idle_store[cpu].cyclesE);
