@@ -1,5 +1,5 @@
 /*  
- * idleprobe.c - Idle times track prober
+ * idleprobe.c - Idle times track probe
  */
 
 #include <linux/module.h> /* Base */
