@@ -143,7 +143,7 @@ static void end_idle(int cpu)
 	jiffies_to_timespec(jiffies, &(tmp->entry.jiffiesE));
 	getrawmonotonic(&(idle_store[cpu].highResE));
 	idle_store[cpu].cyclesE = get_cycles();
-	printk(KERN_INFO "idleprobe: CPU%d AFTER:%ld\n", cpu, get_cycles());
+	printk(KERN_INFO "idleprobe: CPU%d AFTER:%lu\n", cpu, get_cycles());
 	
 	spin_lock(&IP_list_lock);
 	tmp->entry.count = entry_count++;
