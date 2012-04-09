@@ -138,8 +138,6 @@ static void end_idle(int cpu)
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
 	tmp->entry = idle_store[cpu];
 	
-	//rdtscll(&(tmp->entry.end));
-	//now = get_jiffies_64();
 	//gettimeofday(&(tmp->entry.end), NULL);
 	jiffies_to_timespec(jiffies, &(tmp->entry.jiffiesE));
 	getrawmonotonic(&(idle_store[cpu].highResE));
