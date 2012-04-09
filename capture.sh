@@ -4,6 +4,7 @@ while [ 1 ]
 do
 	FILENAME=$(date +"idleprobe-%s.cap")
 	SIZE=0
+	echo Writing $FILENAME:
 	while [ $SIZE -lt 1048576 ]
 	do
 		cat /proc/idleprobe >> $FILENAME

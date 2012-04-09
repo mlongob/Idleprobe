@@ -173,7 +173,8 @@ static void init_capture(void)
 {
 	int i;
 	struct timespec last_fetch;
-	idle_store = (capture_entry_t*) kmalloc(sizeof(capture_entry_t)*NR_CPUS, GFP_KERNEL);
+	idle_store = (capture_entry_t*) kmalloc(
+				 sizeof(capture_entry_t)*NR_CPUS, GFP_KERNEL);
 	for(i = 0; i < NR_CPUS; ++i)
 	{
 		idle_store[i].cpu = i;
@@ -342,7 +343,8 @@ static void IP_seq_stop(struct seq_file *s, void *v)
 
 static u64 delta_to_ns(const delta_period_t* delta)
 {
-	return (delta->end.tv_sec - delta->begin.tv_sec)*1000000000 + delta->end.tv_nsec - delta->begin.tv_nsec;
+	return (delta->end.tv_sec - delta->begin.tv_sec)*1000000000 
+	       + delta->end.tv_nsec - delta->begin.tv_nsec;
 }
 
 static int IP_seq_show(struct seq_file *s, void *v)
@@ -361,11 +363,8 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
 	seq_printf(s, "%d, %d, %llu, %llu, %llu, %lu.%lu\n", entry->count,
-			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta, entry->entry.timestamp.tv_sec, entry->entry.timestamp.tv_nsec);
-	if(entry->entry.jiffies.begin.tv_sec > entry->entry.jiffies.end.tv_sec || (entry->entry.jiffies.begin.tv_sec == entry->entry.jiffies.end.tv_sec && entry->entry.jiffies.begin.tv_nsec > entry->entry.jiffies.end.tv_nsec))
-	{
-		seq_printf(s, "ERROR\n");
-	}
+			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta,
+			   entry->entry.timestamp.tv_sec, entry->entry.timestamp.tv_nsec);
 	return 0;
 }
 
