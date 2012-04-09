@@ -24,7 +24,7 @@
 #define DRIVER_AUTHOR "Mario Longobardi <longob@umich.edu>"
 #define DRIVER_DESC "Idle times track prober"
 #define PROCFS_NAME "idleprobe"
-#define FETCH_TIMEOUT 10 /* Wait time before discarding non-fetched data */
+#define FETCH_TIMEOUT 120 /* Wait time before discarding non-fetched data */
 /* #define IP_DEBUG */
 
 typedef struct delta_period delta_period_t;

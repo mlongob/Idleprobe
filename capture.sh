@@ -5,5 +5,5 @@ echo $FILENAME
 while [ 1 ]
 do
 	cat /proc/idleprobe >> $FILENAME
-	sleep 10
+	sleep 30
 done
