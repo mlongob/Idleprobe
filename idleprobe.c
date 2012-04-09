@@ -379,7 +379,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	test.ktimeB = ktime_get();
 	test.ktimeE = ktime_get();
 	getnstimeofday(&(test.gnstodB));
-	getnstimeofday(&(test.gnstodB));
+	getnstimeofday(&(test.gnstodE));
 	jiffiesD = ts_diff(&(test.jiffiesB), &(test.jiffiesE));
 	highResD = ts_diff(&(test.highResB), &(test.highResE));
 	gnstodD = ts_diff(&(test.gnstodB), &(test.gnstodE));
