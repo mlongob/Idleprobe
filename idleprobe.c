@@ -24,6 +24,7 @@
 #define DRIVER_AUTHOR "Mario Longobardi <longob@umich.edu>"
 #define DRIVER_DESC "Idle times track prober"
 #define PROCFS_NAME "idleprobe"
+#define FETCH_TIMEOUT 10 /* Wait time before discarding non-fetched data */
 /* #define IP_DEBUG */
 
 typedef struct delta_period delta_period_t;
@@ -120,6 +121,7 @@ static struct seq_operations IP_seq_ops = {
 
 static int entry_count = 0;
 static capture_entry_t* idle_store;
+u64 last_fetch_timestamp;
 
 static void begin_idle(int cpu)
 {
@@ -152,6 +154,12 @@ static void end_idle(int cpu)
 	tmp->entry.highRes.end = highRes_end;
 	
 	spin_lock(&IP_list_lock);
+	if(!list_empty(IP_list) && 
+	  (tmp->entry.timestamp > last_fetch_timestamp + FETCH_TIMEOUT))
+	{
+		/* Discard oldest record */
+		list_del(IP_list->next);
+	}
 	tmp->count = entry_count++;
 	list_add_tail(&tmp->list, IP_list);
 	spin_unlock(&IP_list_lock);
@@ -160,6 +168,7 @@ static void end_idle(int cpu)
 static void init_capture(void)
 {
 	int i;
+	struct timespec last_fetch;
 	idle_store = (capture_entry_t*) kmalloc(sizeof(capture_entry_t)*NR_CPUS, GFP_KERNEL);
 	for(i = 0; i < NR_CPUS; ++i)
 	{
@@ -167,6 +176,8 @@ static void init_capture(void)
 	}
 	IP_list = (struct list_head*) kmalloc(sizeof(struct list_head), GFP_KERNEL);
 	INIT_LIST_HEAD(IP_list);
+	getnstimeofday(&last_fetch);
+	last_fetch_timestamp = last_fetch.tv_sec;
 }
 
 static void cleanup_capture(void)
