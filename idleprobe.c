@@ -55,8 +55,8 @@ typedef struct capture_entry
 	struct timespec jiffiesE;
 	struct timespec highResB;
 	struct timespec highResE;
-	clock_t cyclesB;
-	clock_t cyclesE;
+	cycles_t cyclesB;
+	cycles_t cyclesE;
 	int count;
 } capture_entry_t;
 
@@ -347,7 +347,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 			   entry->entry.jiffiesE.tv_sec, entry->entry.highResE.tv_sec);
 	seq_printf(s, "Jiffies=%luns HighRes=%luns\n",
 			   entry->entry.jiffiesE.tv_nsec, entry->entry.highResE.tv_nsec);
-	seq_printf(s, "Before=%lu End=%lu Difference=%lins\n",
+	seq_printf(s, "Before=%llu End=%llu Difference=%llu\n",
 			   entry->entry.cyclesB, entry->entry.cyclesE, entry->entry.cyclesE - entry->entry.cyclesB);
 	return 0;
 }
