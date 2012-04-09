@@ -1,1 +1,3 @@
 - Split module up in multiple c files + h files
+- Come up with graphing script
+- Study portability (lowest functioning kernel version+config values) and make a configure script + installer

@@ -2,11 +2,11 @@
  * idleprobe.c - Idle times track prober
  */
 
-#include <linux/module.h>
-#include <linux/moduleparam.h>
-#include <linux/kernel.h>
-#include <linux/param.h>
-#include <linux/init.h>
+#include <linux/module.h> /* Base */
+#include <linux/moduleparam.h> /* Base */
+#include <linux/kernel.h> /* Base */
+#include <linux/param.h> /* Base */
+#include <linux/init.h> /* Base */
 #include <linux/types.h> /* Fixed-size types */
 #include <linux/sched.h> /* For process info fs */
 #include <linux/kprobes.h> /* For kprobes fs */
@@ -119,9 +119,9 @@ static struct seq_operations IP_seq_ops = {
 	.show  = IP_seq_show
 };
 
-static int entry_count = 0;
-static capture_entry_t* idle_store;
-u64 last_fetch_timestamp;
+static int entry_count = 0;			/* Counter for vaild entries */
+static capture_entry_t* idle_store;	/* Partial result storage */
+u64 last_fetch_timestamp;			/* Timestamp of last fetch */
 
 static void begin_idle(int cpu)
 {
@@ -358,7 +358,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
 	u64 jiffies_delta, highRes_delta, cycles_delta;
 	
-	/* Jiffies are rounded half up to the closest 10ms resolution */
+	/* Jiffies are rounded half up to the closest 1ms resolution */
 	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies) + 500000)/1000000;
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
