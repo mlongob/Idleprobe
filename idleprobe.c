@@ -284,11 +284,13 @@ static void* IP_seq_start(struct seq_file *s, loff_t *pos)
 	if(s->private == NULL)
 	{
 		/* Beginning of reading session */
-		
+		struct timespec last_fetch;
+		getnstimeofday(&last_fetch);
 		spin_lock(&IP_list_lock);
 		list = IP_list;
 		IP_list = (struct list_head*) kmalloc(sizeof(struct list_head), GFP_KERNEL);
 		INIT_LIST_HEAD(IP_list);
+		last_fetch_timestamp = last_fetch.tv_sec;
 		spin_unlock(&IP_list_lock);
 		s->private = list;
 	}
