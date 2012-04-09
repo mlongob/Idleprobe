@@ -61,6 +61,7 @@ typedef struct capture_entry
 	 */
 	
 	int cpu;					/* CPU number */
+	u64 timestamp;
 	delta_period_t jiffies; 	/* Based on kernel jiffiees counter */
 	delta_period_t highRes;		/* Based on CPU cycles */
 	cycles_t cycles_begin;		/* Cycles counter value (begin) */
@@ -126,9 +127,12 @@ static void begin_idle(int cpu)
 	 * Beginning of idle time on "cpu"
 	 */
 	
+	struct timeval temp;
 	getrawmonotonic(&(idle_store[cpu].highRes.begin));
 	idle_store[cpu].cycles_begin = get_cycles();
 	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffies.begin));
+	getnstimeofday(&temp);
+	idle_store[cpu].timestamp = temp.tv_sec;
 }
 
 static void end_idle(int cpu)
@@ -339,7 +343,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
 	seq_printf(s, "%d %d %llu %llu %llu\n", entry->count,
-			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta);
+			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta, entry->entry.timestamp);
 	return 0;
 }
 
