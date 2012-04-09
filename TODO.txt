@@ -1,0 +1,2 @@
+- Find a way to discard data in a circular way (FIFO) if not fedched for n seconds (better?) or n entries
+- Split module up in multiple c files + h files
