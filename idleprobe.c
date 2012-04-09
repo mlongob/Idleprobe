@@ -26,6 +26,7 @@
 #define PROCFS_NAME "idleprobe"
 /* #define IP_DEBUG */
 
+typedef struct delta_period delta_period_t;
 static void begin_idle(int cpu);
 static void end_idle(int cpu);
 static int init_jprobe(struct jprobe *jp);
@@ -41,8 +42,9 @@ static int IP_seq_show(struct seq_file *s, void *v);
 static int IP_open(struct inode *inode, struct file *file);
 static void IP_tick_nohz_stop_sched_tick(int a);
 static void IP_tick_nohz_restart_sched_tick(void);
+static u64 delta_to_ns(const delta_period_t* delta);
 
-typedef struct delta_period
+struct delta_period
 {
 	/* 
 	 * One delta entry
@@ -50,7 +52,7 @@ typedef struct delta_period
 	
 	struct timespec begin;
 	struct timespec end;
-} delta_period_t;
+};
 
 typedef struct capture_entry
 {
@@ -60,6 +62,7 @@ typedef struct capture_entry
 	
 	int cpu;					/* CPU number */
 	delta_period_t jiffies; 	/* Based on kernel jiffiees counter */
+	delta_period_t test; 		/* Test */
 	delta_period_t highRes;		/* Based on CPU cycles */
 	cycles_t cycles_begin;		/* Cycles counter value (begin) */
 	cycles_t cycles_end;		/* Cycles counter value (end) */
@@ -136,17 +139,19 @@ static void end_idle(int cpu)
 	 */
 	
 	struct capture_list* tmp;
-	
+	delta_period_t test;
+	getrawmonotonic(&test.begin);
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
+	getrawmonotonic(&test.end);
 	tmp->entry = idle_store[cpu];
-	
-	getrawmonotonic(&(tmp->entry.highRes.end));
+	tmp->entry.test = test;
+	getrawmonotonic(&tmp->entry.highRes.end);
 	tmp->entry.cycles_end = get_cycles();
-	jiffies_to_timespec(jiffies, &(tmp->entry.jiffies.end));
+	jiffies_to_timespec(jiffies, &tmp->entry.jiffies.end);
 	
 	spin_lock(&IP_list_lock);
 	tmp->count = entry_count++;
-	list_add_tail(&(tmp->list), IP_list);
+	list_add_tail(&tmp->list, IP_list);
 	spin_unlock(&IP_list_lock);
 }
 
@@ -337,6 +342,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
 	seq_printf(s, "%d %d %llu %llu %llu\n", entry->count,
 			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta);
+	seq_printf(s, "%llu\n", delta_to_ns(&entry->entry.test));
 	return 0;
 }
 
