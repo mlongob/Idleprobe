@@ -144,6 +144,8 @@ static void end_idle(int cpu)
 	getrawmonotonic(&(idle_store[cpu].highResE));
 	idle_store[cpu].cyclesE = get_cycles();
 	printk(KERN_INFO "idleprobe: CPU%d AFTER:%llu\n", cpu, get_cycles());
+	printk(KERN_INFO "idleprobe: CPU%d BEFORE2:%llu\n", cpu, idle_store[cpu].cyclesB);
+	printk(KERN_INFO "idleprobe: CPU%d AFTER2:%llu\n", cpu, idle_store[cpu].cyclesE);
 	printk(KERN_INFO "idleprobe: CPU%d DELTA:%llu\n", cpu, idle_store[cpu].cyclesE - idle_store[cpu].cyclesB);
 	
 	spin_lock(&IP_list_lock);
