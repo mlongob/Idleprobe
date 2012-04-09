@@ -8,7 +8,7 @@ do
 	while [ $SIZE -lt 1048576 ]
 	do
 		cat /proc/idleprobe >> $FILENAME
-		sleep 1
+		sleep 30
 		SIZE=$( stat -c %s $FILENAME)
 	done
 	echo $SIZE bytes wrote to $FILENAME
