@@ -127,7 +127,7 @@ static void begin_idle(int cpu)
 	 * Beginning of idle time on "cpu"
 	 */
 	
-	struct timeval temp;
+	struct timespec temp;
 	getrawmonotonic(&(idle_store[cpu].highRes.begin));
 	idle_store[cpu].cycles_begin = get_cycles();
 	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffies.begin));
