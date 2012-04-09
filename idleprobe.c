@@ -357,7 +357,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	u64 jiffies_delta, highRes_delta, cycles_delta;
 	
 	/* Jiffies are rounded half up to the closest 10ms resolution */
-	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies) + 5000000)/10000000;
+	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies) + 500000)/1000000;
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
 	seq_printf(s, "%d %d %llu %llu %llu %lu.%lu\n", entry->count,
