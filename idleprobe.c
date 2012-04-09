@@ -362,7 +362,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
 	seq_printf(s, "%d, %d, %llu, %llu, %llu, %lu.%lu\n", entry->count,
 			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta, entry->entry.timestamp.tv_sec, entry->entry.timestamp.tv_nsec);
-	if(entry->entry.jiffies.begin.tv_sec > entry->entry.jiffies.end.tv_sec || (entry->entry.jiffies.begin.tv_sec == entry->entry.jiffies.end.tv_sec && entry->entry.jiffies.begin.tv_nsec == entry->entry.jiffies.end.tv_nsec))
+	if(entry->entry.jiffies.begin.tv_sec > entry->entry.jiffies.end.tv_sec || (entry->entry.jiffies.begin.tv_sec == entry->entry.jiffies.end.tv_sec && entry->entry.jiffies.begin.tv_nsec > entry->entry.jiffies.end.tv_nsec))
 	{
 		seq_printf(s, "ERROR\n");
 	}
