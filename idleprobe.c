@@ -118,14 +118,10 @@ static void begin_idle(int cpu)
 	/* 
 	 * Beginning of idle time on "cpu"
 	 */
-
-	//rdtscll(idle_store[cpu]);
-	//idle_store[cpu]->jiffiesB = get_jiffies_64();
+	
 	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffiesB));
 	getrawmonotonic(&(idle_store[cpu].highResB));
 	idle_store[cpu].cyclesB = get_cycles();
-	printk(KERN_INFO "idleprobe: CPU%d BEFORE:%llu\n", cpu, get_cycles());
-	//gettimeofday(&(idle_store[cpu]->begin), NULL);
 }
 
 static void end_idle(int cpu)
@@ -139,14 +135,9 @@ static void end_idle(int cpu)
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
 	tmp->entry = idle_store[cpu];
 	
-	//gettimeofday(&(tmp->entry.end), NULL);
 	jiffies_to_timespec(jiffies, &(tmp->entry.jiffiesE));
 	getrawmonotonic(&(tmp->entry.highResE));
 	tmp->entry.cyclesE = get_cycles();
-	printk(KERN_INFO "idleprobe: CPU%d AFTER:%llu\n", cpu, get_cycles());
-	printk(KERN_INFO "idleprobe: CPU%d BEFORE2:%llu\n", cpu, idle_store[cpu].cyclesB);
-	printk(KERN_INFO "idleprobe: CPU%d AFTER2:%llu\n", cpu, idle_store[cpu].cyclesE);
-	printk(KERN_INFO "idleprobe: CPU%d DELTA:%llu\n", cpu, idle_store[cpu].cyclesE - idle_store[cpu].cyclesB);
 	
 	spin_lock(&IP_list_lock);
 	tmp->entry.count = entry_count++;
@@ -334,12 +325,14 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	struct list_head *list = s->private;
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
 	u64 jiffiesD, highResD;
-	
+	long long int error;
 	jiffiesD = ts_diff(&(entry->entry.jiffiesB), &(entry->entry.jiffiesE));
 	highResD = ts_diff(&(entry->entry.highResB), &(entry->entry.highResE));
+	error = highResD - jiffiesD;
 	seq_printf(s, "[%d] CPU%d: Jiffies=%lluns HighRes=%lluns\n", entry->entry.count,
 			   entry->entry.cpu, jiffiesD, highResD);
-	seq_printf(s, "Jiffies=%lus HighRes=%lus\n",
+	seq_printf(s, "Error=%lldns\n", error);
+/* 	seq_printf(s, "Jiffies=%lus HighRes=%lus\n",
 			   entry->entry.jiffiesB.tv_sec, entry->entry.highResB.tv_sec);
 	seq_printf(s, "Jiffies=%luns HighRes=%luns\n",
 			   entry->entry.jiffiesB.tv_nsec, entry->entry.highResB.tv_nsec);
@@ -348,7 +341,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	seq_printf(s, "Jiffies=%luns HighRes=%luns\n",
 			   entry->entry.jiffiesE.tv_nsec, entry->entry.highResE.tv_nsec);
 	seq_printf(s, "Before=%llu End=%llu Difference=%llu\n",
-			   entry->entry.cyclesB, entry->entry.cyclesE, entry->entry.cyclesE - entry->entry.cyclesB);
+			   entry->entry.cyclesB, entry->entry.cyclesE, entry->entry.cyclesE - entry->entry.cyclesB); */
 	return 0;
 }
 
