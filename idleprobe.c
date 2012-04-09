@@ -361,16 +361,6 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	seq_printf(s, "[%d] CPU%d: Jiffies=%lluns HighRes=%lluns gnstod=%lluns ktime=%lluns\n", entry->entry.count,
 			   entry->entry.cpu, jiffiesD, highResD, gnstodD, ktimeD);
 	seq_printf(s, "Error=%lldns\n", error);
-/* 	seq_printf(s, "Jiffies=%lus HighRes=%lus\n",
-			   entry->entry.jiffiesB.tv_sec, entry->entry.highResB.tv_sec);
-	seq_printf(s, "Jiffies=%luns HighRes=%luns\n",
-			   entry->entry.jiffiesB.tv_nsec, entry->entry.highResB.tv_nsec);
-	seq_printf(s, "Jiffies=%lus HighRes=%lus\n",
-			   entry->entry.jiffiesE.tv_sec, entry->entry.highResE.tv_sec);
-	seq_printf(s, "Jiffies=%luns HighRes=%luns\n",
-			   entry->entry.jiffiesE.tv_nsec, entry->entry.highResE.tv_nsec);
-	seq_printf(s, "Before=%llu End=%llu Difference=%llu\n",
-			   entry->entry.cyclesB, entry->entry.cyclesE, entry->entry.cyclesE - entry->entry.cyclesB); */
 			   
 	fetch_begin_time(&test);
 	fetch_end_time(&test);
