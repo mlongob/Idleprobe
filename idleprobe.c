@@ -55,6 +55,8 @@ typedef struct capture_entry
 	struct timespec jiffiesE;
 	struct timespec highResB;
 	struct timespec highResE;
+	struct timespec gnstodB;
+	struct timespec gnstodE;
 	cycles_t cyclesB;
 	cycles_t cyclesE;
 	int count;
@@ -122,6 +124,7 @@ static void begin_idle(int cpu)
 	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffiesB));
 	getrawmonotonic(&(idle_store[cpu].highResB));
 	idle_store[cpu].cyclesB = get_cycles();
+	getnstimeofday(&(idle_store[cpu].gnstodB));
 }
 
 static void end_idle(int cpu)
@@ -138,6 +141,7 @@ static void end_idle(int cpu)
 	jiffies_to_timespec(jiffies, &(tmp->entry.jiffiesE));
 	getrawmonotonic(&(tmp->entry.highResE));
 	tmp->entry.cyclesE = get_cycles();
+	getnstimeofday(&(tmp->entry.gnstodE));
 	
 	spin_lock(&IP_list_lock);
 	tmp->entry.count = entry_count++;
@@ -324,13 +328,14 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	
 	struct list_head *list = s->private;
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
-	u64 jiffiesD, highResD;
+	u64 jiffiesD, highResD, gnstodD;
 	long long int error;
 	jiffiesD = ts_diff(&(entry->entry.jiffiesB), &(entry->entry.jiffiesE));
 	highResD = ts_diff(&(entry->entry.highResB), &(entry->entry.highResE));
-	error = highResD - jiffiesD;
-	seq_printf(s, "[%d] CPU%d: Jiffies=%lluns HighRes=%lluns\n", entry->entry.count,
-			   entry->entry.cpu, jiffiesD, highResD);
+	gnstodD = ts_diff(&(entry->entry.gnstodB), &(entry->entry.gnstodE));
+	error = gnstodD - highResD;
+	seq_printf(s, "[%d] CPU%d: Jiffies=%lluns HighRes=%lluns gnstod=\=%lluns\n", entry->entry.count,
+			   entry->entry.cpu, jiffiesD, highResD, gnstodD);
 	seq_printf(s, "Error=%lldns\n", error);
 /* 	seq_printf(s, "Jiffies=%lus HighRes=%lus\n",
 			   entry->entry.jiffiesB.tv_sec, entry->entry.highResB.tv_sec);
