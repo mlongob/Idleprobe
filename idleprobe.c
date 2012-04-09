@@ -354,15 +354,14 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	
 	struct list_head *list = s->private;
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
-	u64 jiffies_delta, highRes_delta, cycles_delta, ns_timestamp;
+	u64 jiffies_delta, highRes_delta, cycles_delta;
 	
 	/* Jiffies are rounded half up to the closest 10ms resolution */
 	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies) + 5000000)/10000000;
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
-	ns_timestamp = entry->entry.timestamp.tv_sec*1000000000 + entry->entry.timestamp.tv_nsec;
-	seq_printf(s, "%d %d %llu %llu %llu %llu %lu\n", entry->count,
-			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta, ns_timestamp, entry->entry.timestamp.tv_sec);
+	seq_printf(s, "%d %d %llu %llu %llu %lu.%llu\n", entry->count,
+			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta, entry->entry.timestamp.tv_sec, entry->entry.timestamp.tv_nsec);
 	return 0;
 }
 
