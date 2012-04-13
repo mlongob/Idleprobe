@@ -119,20 +119,35 @@ static struct seq_operations IP_seq_ops = {
 	.show  = IP_seq_show
 };
 
-static int entry_count = 0;			/* Counter for vaild entries */
-static capture_entry_t* idle_store;	/* Partial result storage */
-u64 last_fetch_timestamp;			/* Timestamp of last fetch */
+static int entry_count = 0;				/* Counter for vaild entries */
+static capture_entry_t* idle_store;		/* Partial result storage */
+static capture_entry_t* full_idle_store;/* Full system tracking partial storage */
+u64 last_fetch_timestamp;				/* Timestamp of last fetch */
 
 static void begin_idle(int cpu)
 {
 	/* 
 	 * Beginning of idle time on "cpu"
 	 */
+	int all_idle = 1;
 	
 	getrawmonotonic(&(idle_store[cpu].highRes.begin));
 	idle_store[cpu].cycles_begin = get_cycles();
 	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffies.begin));
 	getnstimeofday(&idle_store[cpu].timestamp);
+	
+	for(i = 0; i < NR_CPUS; ++i)
+	{
+		if(idle_store[i].timestamp.tv_sec == 0)
+		{
+			all_idle = 0;
+			break;
+		}
+	}
+	if(all_idle)
+	{
+		*full_idle_store = idle_store[cpu];
+	}
 }
 
 static void end_idle(int cpu)
@@ -152,6 +167,7 @@ static void end_idle(int cpu)
 	getrawmonotonic(&highRes_end); /* kmalloc is slow. Fetching time beforehand */
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
 	tmp->entry = idle_store[cpu];
+	idle_store[cpu].timestamp.tv_sec = 0; // This signals the empty status
 	
 	tmp->entry.cycles_end = get_cycles();
 	jiffies_to_timespec(jiffies, &tmp->entry.jiffies.end);
@@ -175,6 +191,9 @@ static void init_capture(void)
 	struct timespec last_fetch;
 	idle_store = (capture_entry_t*) kmalloc(
 				 sizeof(capture_entry_t)*NR_CPUS, GFP_KERNEL);
+	full_idle_store = (capture_entry_t*) kmalloc(
+				 sizeof(capture_entry_t), GFP_KERNEL);
+	full_idle_store->timestamp.tv_sec = 0;
 	printk(KERN_INFO "idleprobe: cpus = %d\n", NR_CPUS);
 	for(i = 0; i < NR_CPUS; ++i)
 	{
@@ -198,6 +217,7 @@ static void cleanup_capture(void)
 		kfree(tmp);
 	}
 	kfree(IP_list);
+	kfree(full_idle_store);
 	kfree(idle_store);
 }
 
