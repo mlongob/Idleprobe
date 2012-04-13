@@ -175,6 +175,7 @@ static void init_capture(void)
 	struct timespec last_fetch;
 	idle_store = (capture_entry_t*) kmalloc(
 				 sizeof(capture_entry_t)*NR_CPUS, GFP_KERNEL);
+	printk(KERN_INFO "idleprobe: cpus = %d\n", NR_CPUS);
 	for(i = 0; i < NR_CPUS; ++i)
 	{
 		idle_store[i].cpu = i;
