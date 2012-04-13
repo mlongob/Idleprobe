@@ -129,7 +129,7 @@ static void begin_idle(int cpu)
 	/* 
 	 * Beginning of idle time on "cpu"
 	 */
-	int all_idle = 1;
+	int i, all_idle = 1;
 	
 	getrawmonotonic(&(idle_store[cpu].highRes.begin));
 	idle_store[cpu].cycles_begin = get_cycles();
