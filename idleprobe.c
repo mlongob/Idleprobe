@@ -351,10 +351,10 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	struct list_head *list = s->private;
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
 	u64 highRes_delta;
-	struct timespec timestamp_end;
+	struct timespec timestamp_end = entry->entry.timestamp;
 	
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
-	timestamp_end = timespec_add_ns(&entry->entry.timestamp, highRes_delta);
+	timespec_add_ns(&timestamp_end, highRes_delta);
 	
 	seq_printf(s, "%d, %d, %llu, %lu.%09lu %lu.%09lu\n", entry->count,
 			   entry->entry.cpu, highRes_delta,
