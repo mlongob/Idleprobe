@@ -356,7 +356,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
 	timespec_add_ns(&timestamp_end, highRes_delta);
 	
-	seq_printf(s, "%d, %d, %llu, %lu.%09lu %lu.%09lu\n", entry->count,
+	seq_printf(s, "%d, %d, %llu, %lu.%09lu, %lu.%09lu\n", entry->count,
 			   entry->entry.cpu, highRes_delta,
 			   entry->entry.timestamp.tv_sec, entry->entry.timestamp.tv_nsec,
 			   timestamp_end.tv_sec, timestamp_end.tv_nsec);
