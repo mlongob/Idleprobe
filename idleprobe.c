@@ -154,6 +154,7 @@ static void end_idle(int cpu)
 	tmp->entry = idle_store[cpu];
 	
 	tmp->entry.cycles_end = get_cycles();
+	getnstimeofday(&tmp->entry.timestamp.end);
 	jiffies_to_timespec(jiffies, &tmp->entry.jiffies.end);
 	tmp->entry.highRes.end = highRes_end;
 	
@@ -362,9 +363,10 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies) + 500000)/1000000;
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
-	seq_printf(s, "%d, %d, %llu, %llu, %llu, %lu.%09lu\n", entry->count,
+	seq_printf(s, "%d, %d, %llu, %llu, %llu, %lu.%09lu %lu.%09lu\n", entry->count,
 			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta,
-			   entry->entry.timestamp.begin.tv_sec, entry->entry.timestamp.begin.tv_nsec);
+			   entry->entry.timestamp.begin.tv_sec, entry->entry.timestamp.begin.tv_nsec,
+			   entry->entry.timestamp.end.tv_sec, entry->entry.timestamp.end.tv_nsec);
 	return 0;
 }
 
