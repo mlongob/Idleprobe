@@ -123,6 +123,7 @@ static int entry_count = 0;				/* Counter for vaild entries */
 static capture_entry_t* idle_store;		/* Partial result storage */
 static capture_entry_t* full_idle_store;/* Full system tracking partial storage */
 u64 last_fetch_timestamp;				/* Timestamp of last fetch */
+DEFINE_SPINLOCK(full_idle_lock); /* SpinLock for IP_list */
 
 static void begin_idle(int cpu)
 {
@@ -136,6 +137,7 @@ static void begin_idle(int cpu)
 	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffies.begin));
 	getnstimeofday(&idle_store[cpu].timestamp);
 	
+	spin_lock(&full_idle_lock);
 	for(i = 0; i < NR_CPUS; ++i)
 	{
 		if(idle_store[i].timestamp.tv_sec == 0)
@@ -148,6 +150,7 @@ static void begin_idle(int cpu)
 	{
 		*full_idle_store = idle_store[cpu];
 	}
+	spin_unlock(&full_idle_lock);
 }
 
 static void end_idle(int cpu)
@@ -156,7 +159,7 @@ static void end_idle(int cpu)
 	 * End of idle time on "cpu"
 	 */
 	
-	struct capture_list* tmp;
+	struct capture_list* tmp, tmp_full;
 	struct timespec highRes_end;
 	if(idle_store[cpu].timestamp.tv_sec == 0)
 	{
@@ -183,6 +186,17 @@ static void end_idle(int cpu)
 	tmp->count = entry_count++;
 	list_add_tail(&tmp->list, IP_list);
 	spin_unlock(&IP_list_lock);
+	
+	spin_lock(&full_idle_lock);
+	if(full_idle_store->timestamp.tv_sec)
+	{
+		tmp2->entry = *full_idle_store;
+		full_idle_store->timestamp.tv_sec = 0;
+		tmp2->entry.cycles_end = tmp->entry.cycles_end;
+		tmp2->entry.highRes.end = tmp->entry.highRes.end;
+		tmp2->entry.jiffies.end = tmp->entry.jiffies.end;
+	}
+	spin_unlock(&full_idle_lock);
 }
 
 static void init_capture(void)

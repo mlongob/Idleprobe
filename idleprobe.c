@@ -62,7 +62,7 @@ typedef struct capture_entry
 	 */
 	
 	int cpu;					/* CPU number */
-	struct timespec timestamp;	/* Timestamp of when the period begun */
+	delta_period_t timestamp;	/* Timestamp of when the period begun */
 	delta_period_t jiffies; 	/* Based on kernel jiffiees counter */
 	delta_period_t highRes;		/* Based on CPU cycles */
 	cycles_t cycles_begin;		/* Cycles counter value (begin) */
@@ -132,7 +132,7 @@ static void begin_idle(int cpu)
 	getrawmonotonic(&(idle_store[cpu].highRes.begin));
 	idle_store[cpu].cycles_begin = get_cycles();
 	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffies.begin));
-	getnstimeofday(&idle_store[cpu].timestamp);
+	getnstimeofday(&idle_store[cpu].timestamp.begin);
 }
 
 static void end_idle(int cpu)
@@ -143,7 +143,7 @@ static void end_idle(int cpu)
 	
 	struct capture_list* tmp;
 	struct timespec highRes_end;
-	if(idle_store[cpu].timestamp.tv_sec == 0)
+	if(idle_store[cpu].timestamp.begin.tv_sec == 0)
 	{
 		/* When the module is started, the fist call to end_idle
 		   can be corrupted */
@@ -159,7 +159,7 @@ static void end_idle(int cpu)
 	
 	spin_lock(&IP_list_lock);
 	if(!list_empty(IP_list) && 
-	  (tmp->entry.timestamp.tv_sec > last_fetch_timestamp + FETCH_TIMEOUT))
+	  (tmp->entry.timestamp.begin.tv_sec > last_fetch_timestamp + FETCH_TIMEOUT))
 	{
 		/* Discard oldest record */
 		list_del(IP_list->next);
@@ -178,7 +178,7 @@ static void init_capture(void)
 	for(i = 0; i < NR_CPUS; ++i)
 	{
 		idle_store[i].cpu = i;
-		idle_store[i].timestamp.tv_sec = 0;
+		idle_store[i].timestamp.begin.tv_sec = 0;
 	}
 	IP_list = (struct list_head*) kmalloc(sizeof(struct list_head), GFP_KERNEL);
 	INIT_LIST_HEAD(IP_list);
@@ -364,7 +364,7 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
 	seq_printf(s, "%d, %d, %llu, %llu, %llu, %lu.%09lu\n", entry->count,
 			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta,
-			   entry->entry.timestamp.tv_sec, entry->entry.timestamp.tv_nsec);
+			   entry->entry.timestamp.begin.tv_sec, entry->entry.timestamp.begin.tv_nsec);
 	return 0;
 }
 
