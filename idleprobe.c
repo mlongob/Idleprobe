@@ -147,7 +147,7 @@ static void end_idle(int cpu)
 	getrawmonotonic(&highRes_end); /* kmalloc is slow. Fetching time beforehand */
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
 	tmp->entry = idle_store[cpu];
-	idle_store[i].timestamp.tv_sec = 0;
+	idle_store[cpu].timestamp.tv_sec = 0;
 	
 	tmp->entry.highRes.end = highRes_end;
 	
