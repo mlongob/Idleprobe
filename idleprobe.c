@@ -62,11 +62,8 @@ typedef struct capture_entry
 	 */
 	
 	int cpu;					/* CPU number */
-	delta_period_t timestamp;	/* Timestamp of when the period begun */
-	delta_period_t jiffies; 	/* Based on kernel jiffiees counter */
+	struct timespec timestamp;	/* Timestamp of when the period begun */
 	delta_period_t highRes;		/* Based on CPU cycles */
-	cycles_t cycles_begin;		/* Cycles counter value (begin) */
-	cycles_t cycles_end;		/* Cycles counter value (end) */
 } capture_entry_t;
 
 struct capture_list
@@ -130,9 +127,7 @@ static void begin_idle(int cpu)
 	 */
 	
 	getrawmonotonic(&(idle_store[cpu].highRes.begin));
-	idle_store[cpu].cycles_begin = get_cycles();
-	jiffies_to_timespec(jiffies, &(idle_store[cpu].jiffies.begin));
-	getnstimeofday(&idle_store[cpu].timestamp.begin);
+	getnstimeofday(&idle_store[cpu].timestamp);
 }
 
 static void end_idle(int cpu)
@@ -143,7 +138,7 @@ static void end_idle(int cpu)
 	
 	struct capture_list* tmp;
 	struct timespec highRes_end;
-	if(idle_store[cpu].timestamp.begin.tv_sec == 0)
+	if(idle_store[cpu].timestamp.tv_sec == 0)
 	{
 		/* When the module is started, the fist call to end_idle
 		   can be corrupted */
@@ -152,15 +147,13 @@ static void end_idle(int cpu)
 	getrawmonotonic(&highRes_end); /* kmalloc is slow. Fetching time beforehand */
 	tmp = (struct capture_list*) kmalloc(sizeof(struct capture_list), GFP_ATOMIC);
 	tmp->entry = idle_store[cpu];
+	idle_store[i].timestamp.tv_sec = 0;
 	
-	tmp->entry.cycles_end = get_cycles();
-	getnstimeofday(&tmp->entry.timestamp.end);
-	jiffies_to_timespec(jiffies, &tmp->entry.jiffies.end);
 	tmp->entry.highRes.end = highRes_end;
 	
 	spin_lock(&IP_list_lock);
 	if(!list_empty(IP_list) && 
-	  (tmp->entry.timestamp.begin.tv_sec > last_fetch_timestamp + FETCH_TIMEOUT))
+	  (tmp->entry.timestamp.tv_sec > last_fetch_timestamp + FETCH_TIMEOUT))
 	{
 		/* Discard oldest record */
 		list_del(IP_list->next);
@@ -179,7 +172,7 @@ static void init_capture(void)
 	for(i = 0; i < NR_CPUS; ++i)
 	{
 		idle_store[i].cpu = i;
-		idle_store[i].timestamp.begin.tv_sec = 0;
+		idle_store[i].timestamp.tv_sec = 0;
 	}
 	IP_list = (struct list_head*) kmalloc(sizeof(struct list_head), GFP_KERNEL);
 	INIT_LIST_HEAD(IP_list);
@@ -357,16 +350,16 @@ static int IP_seq_show(struct seq_file *s, void *v)
 	
 	struct list_head *list = s->private;
 	struct capture_list *entry = list_entry(list->next, struct capture_list, list);
-	u64 jiffies_delta, highRes_delta, cycles_delta;
+	u64 highRes_delta;
+	struct timespec timestamp_end;
 	
-	/* Jiffies are rounded half up to the closest 1ms resolution */
-	jiffies_delta = ((long int)delta_to_ns(&entry->entry.jiffies) + 500000)/1000000;
 	highRes_delta = delta_to_ns(&entry->entry.highRes);
-	cycles_delta = entry->entry.cycles_end - entry->entry.cycles_begin;
-	seq_printf(s, "%d, %d, %llu, %llu, %llu, %lu.%09lu %lu.%09lu\n", entry->count,
-			   entry->entry.cpu, highRes_delta, jiffies_delta, cycles_delta,
-			   entry->entry.timestamp.begin.tv_sec, entry->entry.timestamp.begin.tv_nsec,
-			   entry->entry.timestamp.end.tv_sec, entry->entry.timestamp.end.tv_nsec);
+	timestamp_end = timespec_add_ns(&entry->entry.timestamp, highRes_delta);
+	
+	seq_printf(s, "%d, %d, %llu, %lu.%09lu %lu.%09lu\n", entry->count,
+			   entry->entry.cpu, highRes_delta,
+			   entry->entry.timestamp.tv_sec, entry->entry.timestamp.tv_nsec,
+			   timestamp_end.tv_sec, timestamp_end.tv_nsec);
 	return 0;
 }
 
